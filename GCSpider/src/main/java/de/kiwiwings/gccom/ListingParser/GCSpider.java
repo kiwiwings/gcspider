@@ -12,21 +12,16 @@ public class GCSpider {
 		SpiderContext ctx = new SpiderContext();
 
 		new InitContextPlugin().execute(ctx);
-		new ConfigPlugin().execute(ctx);
-
-		new FindsInitPlugin().execute(ctx);
-		new LoadDatabasePlugin().execute(ctx);
-		
-		new ParseCompare().execute(ctx);
-	}
-
-	public static void main2(String[] args) throws Exception {
-		SpiderContext ctx = new SpiderContext();
-
-		new InitContextPlugin().execute(ctx);
-		new ConfigPlugin().execute(ctx);
+		ConfigPlugin configPlg = new ConfigPlugin();
+		// configPlg.setParserProps("listingparser.jsoup.properties");
+		configPlg.execute(ctx);
 		new LoginPlugin().execute(ctx);
 
+		doFinds(ctx);
+		doHides(ctx);
+	}
+
+	private static void doFinds(SpiderContext ctx) throws Exception {
 		new FindsInitPlugin().execute(ctx);
 		new LoadDatabasePlugin().execute(ctx);
 		try {
@@ -39,7 +34,9 @@ public class GCSpider {
 			new SaveDatabasePlugin().execute(ctx);
 		}
 		new ExportGPXPlugin().execute(ctx);
-		
+	}
+	
+	private static void doHides(SpiderContext ctx) throws Exception {
 		new HidesInitPlugin().execute(ctx);
 		new LoadDatabasePlugin().execute(ctx);
 		SpiderConfig config = ctx.getConfig();
@@ -54,7 +51,7 @@ public class GCSpider {
 //		new CreateHidesStatsPlugin().execute(ctx);
 		new CreateHidesChartPlugin().execute(ctx);
 	}
-
+	
 	@SuppressWarnings("unused")
 	private static void invalidateAll(SpiderContext ctx) {
 		for (Map<String,String> entry : ctx.getDatabase()) {
@@ -62,7 +59,7 @@ public class GCSpider {
 		}
 	}
 	
-	private static void navigate(SpiderContext ctx, SpiderPlugin navigatePlugin, SpiderPlugin childrenPlugins[]) throws Exception {
+	public static void navigate(SpiderContext ctx, SpiderPlugin navigatePlugin, SpiderPlugin childrenPlugins[]) throws Exception {
 		NavigationState navState;
 		do {
 			navigatePlugin.execute(ctx);

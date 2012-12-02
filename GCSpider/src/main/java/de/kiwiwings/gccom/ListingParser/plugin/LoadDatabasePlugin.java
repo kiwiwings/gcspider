@@ -70,6 +70,9 @@ public class LoadDatabasePlugin implements SpiderPlugin {
 		    			ca.setColumn(name.getNameName());
 		    			ca.setIndex(Integer.parseInt(parts[0]));
 		    			ca.setLabel(parts[1]);
+		    			if (parts.length >= 3) {
+		    				ca.setImageSuffix(parts[2]);
+		    			}
 		    			attrList.add(ca);
 		    		}
 		    	}

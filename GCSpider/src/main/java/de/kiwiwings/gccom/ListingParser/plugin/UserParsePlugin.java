@@ -5,29 +5,21 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpression;
-
-import org.w3c.dom.Document;
-
 import de.kiwiwings.gccom.ListingParser.SpiderContext;
+import de.kiwiwings.gccom.ListingParser.parser.CommonParser;
 
 
 public class UserParsePlugin implements SpiderPlugin {
 	public void execute(SpiderContext ctx) throws Exception {
-		Document doc = ctx.getPageContent();
-		if (doc == null) return;
+		CommonParser parser = ctx.getParser();
+		if (!parser.hasDocument()) return;
 		
 		final String key = "owner_guid";
 		
 		Map<String,String> entryTemplate = new HashMap<String,String>();
 		for (String column : ctx.getSchema().keySet()) {
-			String xpathStr = (String)ctx.getConfig().get("parse.user."+column);
-			if (xpathStr == null || "".equals(xpathStr)) continue;
-			
-			XPathExpression xpe = ctx.getXpathExpression(xpathStr);
-			String value = (String)xpe.evaluate(doc, XPathConstants.STRING);
-			
+			String value = parser.selectConfigString(ctx, "parse.user."+column);
+			if (value == null || "".equals(value)) continue;
 			entryTemplate.put(column, value);
 		}
 

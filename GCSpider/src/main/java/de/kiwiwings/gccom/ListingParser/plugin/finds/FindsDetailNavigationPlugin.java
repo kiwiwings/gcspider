@@ -12,7 +12,6 @@ import de.kiwiwings.gccom.ListingParser.SpiderConfig;
 import de.kiwiwings.gccom.ListingParser.SpiderContext;
 import de.kiwiwings.gccom.ListingParser.SpiderContext.NavigationState;
 import de.kiwiwings.gccom.ListingParser.plugin.DetailComparator;
-import de.kiwiwings.gccom.ListingParser.plugin.JTidyPlugin;
 import de.kiwiwings.gccom.ListingParser.plugin.SpiderPlugin;
 
 public class FindsDetailNavigationPlugin implements SpiderPlugin {
@@ -40,7 +39,6 @@ public class FindsDetailNavigationPlugin implements SpiderPlugin {
 		// reverse logic to list-navigation
 		if (ctx.getPageCount(true)==-1) {
 			ctx.setNavigationState(NavigationState.last);
-			new JTidyPlugin().execute(ctx);
 		} else {
 			ctx.setNavigationState(NavigationState.error);
 		}

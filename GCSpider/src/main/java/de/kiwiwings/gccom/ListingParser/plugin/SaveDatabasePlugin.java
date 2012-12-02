@@ -26,6 +26,8 @@ public class SaveDatabasePlugin implements SpiderPlugin {
 	
 	public void execute(SpiderContext ctx) throws Exception {
 		SpiderConfig config = ctx.getConfig();
+		if (config.getDebugLastFetched()) return;
+		
 		File excelF = new File(config.getExcelFile());
 		wb = new HSSFWorkbook(new POIFSFileSystem(new FileInputStream(excelF)));
 		Sheet sheet = wb.getSheet(ctx.getDatatable());

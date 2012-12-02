@@ -21,10 +21,12 @@ public class ExportGPXPlugin implements SpiderPlugin {
 	double minLat = Double.POSITIVE_INFINITY, minLon = Double.POSITIVE_INFINITY;
 	
 	public void execute(SpiderContext ctx) throws Exception {
+		SpiderConfig config = ctx.getConfig();
+		if (config.getDebugLastFetched()) return;
+		
 		parseWaypointTemplate(ctx);
 		determineMaxValues(ctx);
 
-		SpiderConfig config = ctx.getConfig();
 		File gpxF = new File(config.getGpxFile());
 		FileOutputStream fos = new FileOutputStream(gpxF);
 		OutputStreamWriter osw = new OutputStreamWriter(fos, "UTF8");

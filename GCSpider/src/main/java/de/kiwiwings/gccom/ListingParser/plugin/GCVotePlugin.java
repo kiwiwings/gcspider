@@ -33,6 +33,8 @@ public class GCVotePlugin implements SpiderPlugin {
 	private final static int FETCH_SIZE = 250;
 	
 	public void execute(SpiderContext ctx) throws Exception {
+		if (ctx.getConfig().getDebugLastFetched()) return;
+		
 		// http://gcvote.com/getVotes.php?waypoints=GC1ZFFH
 		String updateDate = SpiderContext.fullDateFormat.format(new Date());
 		Pattern votePat = Pattern.compile("\\((\\d).(\\d):(\\d+)\\)");

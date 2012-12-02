@@ -4,8 +4,7 @@ public class CacheAttribute {
 	String column;
 	int index;
 	String label;
-
-	
+	String imageSuffix;
 	
 	public String getColumn() {
 		return column;
@@ -31,4 +30,11 @@ public class CacheAttribute {
 		this.label = label;
 	}
 
+	public String getImageSuffix() {
+		return imageSuffix;
+	}
+
+	public void setImageSuffix(String imageSuffix) {
+		this.imageSuffix = imageSuffix;
+	}
 }

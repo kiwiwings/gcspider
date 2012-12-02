@@ -35,4 +35,8 @@ public class HidesListParsePlugin extends FindsListParsePlugin {
 			ctx.getHidesTodos().put(wpcode, entry);
 		}
 	}
+
+	protected String getRowSelEntry() {
+		return "parse.list.hides_rowsel";
+	}
 }

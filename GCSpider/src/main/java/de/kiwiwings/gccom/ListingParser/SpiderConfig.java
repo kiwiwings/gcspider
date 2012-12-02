@@ -91,10 +91,6 @@ public class SpiderConfig extends Properties {
 		return (String)get("http.url.hides");
 	}
 	
-	public String getJTidyErrorFile() {
-		return (String)get("debug.jtidy.error");
-	}
-
 	public int getSleepTime() {
 		return Integer.parseInt((String)get("parse.sleep"));
 	}

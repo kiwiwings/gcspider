@@ -1,32 +1,54 @@
 package de.kiwiwings.gccom.ListingParser.plugin.finds;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpression;
-
-import org.w3c.dom.Document;
-
-import de.kiwiwings.gccom.ListingParser.SpiderConfig;
+import de.kiwiwings.gccom.ListingParser.CacheAttribute;
 import de.kiwiwings.gccom.ListingParser.SpiderContext;
+import de.kiwiwings.gccom.ListingParser.parser.CommonParser;
 import de.kiwiwings.gccom.ListingParser.plugin.SpiderPlugin;
 
 
 public class FindsDetailParsePlugin implements SpiderPlugin {
 	public void execute(SpiderContext ctx) throws Exception {
-		Document doc = ctx.getPageContent();
-		if (doc == null) return;
+		CommonParser parser = ctx.getParser();
+		if (!parser.hasDocument()) return;
 		
-		SpiderConfig config = ctx.getConfig();
 		Map<String,String> entry = new HashMap<String,String>();
+
+		List<CacheAttribute> cacheAttr = ctx.getCacheAttr();
+
+		Map<String,String> attributes = new HashMap<String,String>();
+		String values[] = parser.selectConfigStringList(ctx, "parse.detail.attributes");
+		for (String v : values) {
+			String pair[] = v.split("-");
+			assert(pair != null && pair.length == 2);
+			String name = pair[0];
+			String value;
+			if ("yes".equals(pair[1])) {
+				value = "1";
+			} else if ("no".equals(pair[1])) {
+				value = "0";
+			} else {
+				continue;
+			}
+			
+			for (CacheAttribute ca : cacheAttr) {
+				if (name.equals(ca.getImageSuffix()) || ca.getColumn().endsWith(name)) {
+					attributes.put(ca.getColumn(), value);
+				}
+			}
+		}
+		
 		for (String column : ctx.getSchema().keySet()) {
-			String xpathStr = (String)config.get("parse.detail."+column);
-			if (xpathStr == null || "".equals(xpathStr)) continue;
+			if (column.startsWith("attribute_")) {
+				entry.put(column, attributes.get(column));
+				continue;
+			}
 			
-			XPathExpression xpe = ctx.getXpathExpression(xpathStr);
-			String value = (String)xpe.evaluate(doc, XPathConstants.STRING);
-			
+			String value = parser.selectConfigString(ctx, "parse.detail."+column); 
+			if (value == null || "".equals(value)) continue;
 			entry.put(column, value);
 		}
 		ctx.putDatabaseEntry(entry);

@@ -1,6 +1,5 @@
 package de.kiwiwings.gccom.ListingParser.plugin.finds;
 
-import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.lang.reflect.Type;
@@ -11,12 +10,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpression;
-
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.xalan.extensions.GCConversions;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -29,8 +24,9 @@ import de.kiwiwings.gccom.ListingParser.SpiderContext;
 import de.kiwiwings.gccom.ListingParser.SpiderContext.NavigationState;
 import de.kiwiwings.gccom.ListingParser.json.Log;
 import de.kiwiwings.gccom.ListingParser.json.LogContainer;
-import de.kiwiwings.gccom.ListingParser.plugin.JTidyPlugin;
+import de.kiwiwings.gccom.ListingParser.parser.CommonParser;
 import de.kiwiwings.gccom.ListingParser.plugin.SpiderPlugin;
+import de.kiwiwings.gccom.ListingParser.postfix.Html2BBCode;
 
 public class FindsDetailLogsPlugin implements SpiderPlugin {
 	public static final int FETCH_SIZE = 25;
@@ -38,10 +34,8 @@ public class FindsDetailLogsPlugin implements SpiderPlugin {
 	protected int logCount;
 	protected String userToken;
 	private Gson gson;
-	private JTidyPlugin jTidyPlugin;
 	
 	public FindsDetailLogsPlugin() throws Exception {
-		jTidyPlugin = new JTidyPlugin();
 		GsonBuilder gsonBuilder = new GsonBuilder();
 		gsonBuilder.registerTypeAdapter(Date.class, new JsonDeserializer<Date>() {
 			DateFormat df = new SimpleDateFormat("MM/dd/yyyy");
@@ -59,6 +53,8 @@ public class FindsDetailLogsPlugin implements SpiderPlugin {
 	}
 	
 	public void execute(SpiderContext ctx) throws Exception {
+		if (ctx.getConfig().getDebugLastFetched()) return;
+		
 		updateDetailData(ctx);
 		if (waypoint == null || logCount == 0) return;
 		
@@ -100,33 +96,17 @@ FETCH:	for (int idx=0; (idx*FETCH_SIZE)<logCount; idx++) {
 	}
 	
 	private void processEntry(SpiderContext ctx, Log logEntry) throws Exception {
-		ByteArrayInputStream bis = new ByteArrayInputStream(("<bbcode>"+logEntry.logText+"</bbcode>").getBytes("UTF-8"));
-		ctx.setPagestream(bis);
-		ctx.setPageEncoding("UTF-8");
-		
-		jTidyPlugin.execute(ctx);
-		
-		String s = GCConversions.html2bbcode(ctx.getPageContent().getDocumentElement().getChildNodes());
-		
-		s = s.replaceAll("(?s).*<body>(.*)</body>", "$1");
-		s = s.replaceAll("(?m)^[ \\t]+","");
-		s = s.replaceAll("(?m)[ \\t]+$","");
-		s = s.replaceAll("(?s)(\r?\n){2,}", "\n\n");
-		
+		String s = new Html2BBCode().process(logEntry.logText);
 		logEntry.logText = s;
-
 		putDatabaseEntry(ctx, logEntry);
 	}
 	
 	protected void updateDetailData(SpiderContext ctx) throws Exception {
-		XPathExpression xpe = ctx.getXpathExpression("gc:find(string(//script[contains(., 'var uvtoken')]), \"userToken = '(.*)'\")");
-		userToken = (String)xpe.evaluate(ctx.getPageContent(), XPathConstants.STRING);
-
-		xpe = ctx.getXpathExpression(ctx.getConfig().getProperty("parse.detail.waypoint"));
-		waypoint = (String)xpe.evaluate(ctx.getPageContent(), XPathConstants.STRING);
+		CommonParser parser = ctx.getParser(); 
+		userToken = parser.selectConfigString(ctx, "parse.detail.usertoken");
+		waypoint = parser.selectConfigString(ctx, "parse.detail.waypoint");
+		String logCountStr = parser.selectConfigString(ctx, "parse.detail.loggedvisits");
 		
-		xpe = ctx.getXpathExpression("translate(substring-before(//h3[contains(text(), 'Logged Visits')], ' '), ',','')");
-		String logCountStr = (String)xpe.evaluate(ctx.getPageContent(), XPathConstants.STRING);
 		try {
 			logCount = Integer.parseInt(logCountStr);
 		} catch (NumberFormatException e) {

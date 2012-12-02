@@ -12,7 +12,7 @@ public class Find implements ParseProc {
 		p = Pattern.compile(input);
 	}
 	
-	public String process(Object input) {
+	public String process(Object input) throws Exception {
 		Matcher m = p.matcher(input.toString());
 		StringBuffer sb = new StringBuffer();
 		while (m.find()) {

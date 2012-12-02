@@ -4,9 +4,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpression;
-
 import de.kiwiwings.gccom.ListingParser.SpiderContext;
 import de.kiwiwings.gccom.ListingParser.SpiderContext.NavigationState;
 import de.kiwiwings.gccom.ListingParser.json.Log;
@@ -27,9 +24,7 @@ public class HidesDetailLogsPlugin extends FindsDetailLogsPlugin {
 	
 	protected void updateDetailData(SpiderContext ctx) throws Exception {
 		super.updateDetailData(ctx);
-		
-		XPathExpression xpe = ctx.getXpathExpression((String)ctx.getConfig().get("parse.detail.hides_datehidden"));
-		datehidden = (String)xpe.evaluate(ctx.getPageContent(), XPathConstants.STRING);
+		datehidden = ctx.getParser().selectConfigString(ctx, "parse.detail.hides_datehidden");
 	}
 
 	protected NavigationState processState(SpiderContext ctx, Log logEntry) {

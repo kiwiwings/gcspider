@@ -12,13 +12,15 @@ import de.kiwiwings.gccom.ListingParser.SpiderConfig;
 import de.kiwiwings.gccom.ListingParser.SpiderContext;
 
 public class ConfigPlugin implements SpiderPlugin {
+	String parserProps = "listingparser.htmlcleaner.properties";
+	
 	public void execute(SpiderContext ctx) throws Exception {
 		SpiderConfig config = new SpiderConfig(); 
 		URL listProps = findResource("gcuser.properties");
 		InputStream is = listProps.openStream(); 
 		config.load(is);
 		is.close();
-		listProps = findResource("listingparser.jsoup.properties");
+		listProps = findResource(parserProps);
 		is = listProps.openStream(); 
 		config.load(is);
 		is.close();
@@ -75,5 +77,9 @@ public class ConfigPlugin implements SpiderPlugin {
 		}
 		
 		return resUrl;
+	}
+
+	public void setParserProps(String parserProps) {
+		this.parserProps = parserProps;
 	}
 }

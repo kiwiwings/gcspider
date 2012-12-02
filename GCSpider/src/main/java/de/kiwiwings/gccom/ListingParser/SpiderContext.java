@@ -11,11 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpression;
-import javax.xml.xpath.XPathExpressionException;
-
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -26,17 +21,19 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.HttpContext;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
 
-import de.kiwiwings.gccom.ListingParser.plugin.JTidyPlugin;
+import de.kiwiwings.gccom.ListingParser.parser.CommonElement;
+import de.kiwiwings.gccom.ListingParser.parser.CommonParser;
+import de.kiwiwings.gccom.ListingParser.plugin.SpiderPlugin;
 
 public class SpiderContext {
 	public static final DateFormat fullDateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
 	
-	XPath xpath;
-	Map<String,XPathExpression> xpathCache = new HashMap<String,XPathExpression>();
+//	Document pageContent;
+//	JTidyPlugin jTidy;
+	
+	CommonParser parser;
+
 	SpiderConfig config;
 	String datatable = null;
 	String primaryKey = null;
@@ -53,7 +50,6 @@ public class SpiderContext {
 	InputStream pageStream;
 	// http input stream encoding
 	String pageEncoding = "UTF-8";
-	Document pageContent;
 	List<NameValuePair> formParams = new ArrayList<NameValuePair>();
 	HttpClient httpClient;
 	HttpContext httpContext;
@@ -62,11 +58,6 @@ public class SpiderContext {
 	List<Map<String,String>> userMappingTodos;
 	// Result for hides waypoint todo (GCCode, Cache-Name)
 	Map<String,Map<String,String>> hidesTodos;
-	JTidyPlugin jTidy;
-	
-	public SpiderContext() throws Exception {
-		jTidy = new JTidyPlugin();
-	}
 	
 	public static enum NavigationState { error, last, next, skip };
 	NavigationState navigationState = NavigationState.next;
@@ -98,15 +89,6 @@ public class SpiderContext {
 		}
 		changedIdx.add(pk);
 		return found;
-	}
-
-	public XPathExpression getXpathExpression(String xpathstr) throws XPathExpressionException {
-		XPathExpression xpe = xpathCache.get(xpathstr);
-		if (xpe == null) {
-			xpe = xpath.compile(xpathstr);
-			xpathCache.put(xpathstr, xpe);
-		}
-		return xpe;
 	}
 
 	public void replaceFormParam(String name, String value) {
@@ -171,17 +153,14 @@ outer:	while (iter.hasNext()) {
 	throws Exception {
 		requestData(method);
 		
-		jTidy.execute(this);
+		((SpiderPlugin)getParser()).execute(this);
 		
-		XPathExpression inputSel = getXpathExpression("//input");
+		CommonElement inputs[] = getParser().selectElements(config.getProperty("parse.form.inputs"));
 		
-		NodeList ns = (NodeList)inputSel.evaluate(getPageContent(), XPathConstants.NODESET);
-
 		formParams.clear();
-		for (int i=0; i<ns.getLength(); i++) {
-			Element line = (Element)ns.item(i);
-			String name = line.getAttribute("name");
-			String value = line.getAttribute("value");
+		for (CommonElement ce : inputs) {
+			String name = ce.getAttribute("name");
+			String value = ce.getAttribute("value");
 			if (name == null || "".equals(name) || value == null) continue;
 			formParams.add(new BasicNameValuePair(name, value));
 		}
@@ -190,12 +169,15 @@ outer:	while (iter.hasNext()) {
 	public int getPageCount(boolean forceParsing) throws Exception {
 		if (pageCount != -1 && !forceParsing) return pageCount;
 		
-		if (pageContent == null) return -1;
+		CommonElement pcount[] = getParser().selectElements(config.getProperty("parse.list.pagecount"));
+
+		if (pcount == null || pcount.length == 0) return -1;
 		
-		XPathExpression inputSel = getXpathExpression((String)config.get("parse.list.pagecount"));
-		Double pageCountD = (Double)inputSel.evaluate(pageContent, XPathConstants.NUMBER);
-		if (pageCountD == null || pageCountD.isNaN()) return -1;
-		return pageCountD.intValue();
+		try {
+			return Integer.parseInt(pcount[0].getText());
+		} catch (NumberFormatException nfe) {
+			return -1;
+		}
 	}
 	
 	public int getPageCount() throws Exception {
@@ -207,12 +189,6 @@ outer:	while (iter.hasNext()) {
 		return (pk == null) ? "" : pk;
 	}
 	
-	public XPath getXpath() {
-		return xpath;
-	}
-	public void setXpath(XPath xpath) {
-		this.xpath = xpath;
-	}
 	public SpiderConfig getConfig() {
 		return config;
 	}
@@ -252,14 +228,6 @@ outer:	while (iter.hasNext()) {
 
 	public void setPageEncoding(String pageEncoding) {
 		this.pageEncoding = pageEncoding;
-	}
-
-	public Document getPageContent() {
-		return pageContent;
-	}
-
-	public void setPageContent(Document pageContent) {
-		this.pageContent = pageContent;
 	}
 
 	public List<NameValuePair> getFormParams() {
@@ -321,5 +289,12 @@ outer:	while (iter.hasNext()) {
 	public void setHidesTodos(Map<String,Map<String,String>> hidesTodos) {
 		this.hidesTodos = hidesTodos;
 	}
-	
+
+	public CommonParser getParser() throws Exception {
+		if (parser == null) {
+			String parserClass = config.getProperty("parse.class");
+			parser = (CommonParser)Class.forName(parserClass).newInstance();
+		}
+		return parser;
+	}
 }

@@ -66,6 +66,16 @@ public class FindsListNavigationPlugin implements SpiderPlugin {
 		
 		// TODO: set page encoding and page index
 		ctx.setPagestream(new ByteArrayInputStream(bos.toByteArray()));
+		
+		SpiderConfig config = ctx.getConfig();
+		boolean debug = config.getDebug();
+		try {
+			config.setProperty("debug.active", "false");
+			((SpiderPlugin)ctx.getParser()).execute(ctx);
+		} finally {
+			if (debug) config.setProperty("debug.active", "true");
+		}
+		
 	}
 	
 	private void initFirstOverview(SpiderContext ctx) throws Exception {
