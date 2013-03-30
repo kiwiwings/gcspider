@@ -13,7 +13,7 @@ public class GCSpider {
 
 		new InitContextPlugin().execute(ctx);
 		ConfigPlugin configPlg = new ConfigPlugin();
-		// configPlg.setParserProps("listingparser.jsoup.properties");
+		configPlg.setParserProps("listingparser.jsoup.properties");
 		configPlg.execute(ctx);
 		new LoginPlugin().execute(ctx);
 

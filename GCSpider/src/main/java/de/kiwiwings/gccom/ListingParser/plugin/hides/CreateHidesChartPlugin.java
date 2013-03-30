@@ -1,6 +1,5 @@
 package de.kiwiwings.gccom.ListingParser.plugin.hides;
 
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.InputStreamReader;
 import java.text.DateFormat;
@@ -11,13 +10,13 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 
 import com.google.gson.Gson;
@@ -34,6 +33,9 @@ public class CreateHidesChartPlugin implements SpiderPlugin {
 		String name;
 		String url;
 		String title;
+		boolean ftf = false;
+		int x = -1;
+		int y = -1;
 	}
 	
 	// http://code.google.com/apis/chart/image/docs/data_formats.html#simple
@@ -62,6 +64,13 @@ public class CreateHidesChartPlugin implements SpiderPlugin {
 			if (foundlist == null) {
 				foundlist = new HashMap<String,Map<String,String>>();
 				ownermap.put(userid, foundlist);
+			}
+			Map<String,String> oldEntry = foundlist.get(waypoint);
+			if (oldEntry != null) {
+				Date oldDate = SpiderContext.fullDateFormat.parse(oldEntry.get("hides_founddate"));
+				Date newDate = SpiderContext.fullDateFormat.parse(entry.get("hides_founddate"));
+				// double log entry, keep older
+				if (oldDate.before(newDate)) continue;
 			}
 			foundlist.put(waypoint,entry);
 
@@ -105,7 +114,8 @@ public class CreateHidesChartPlugin implements SpiderPlugin {
 		nf.setGroupingUsed(false);
 		nf.setMaximumFractionDigits(3);
 		
-		Map<String,UseMapEntry> imageMapEntry = new HashMap<String,UseMapEntry>(); 
+		Map<String,UseMapEntry> imageMapEntry = new LinkedHashMap<String,UseMapEntry>();
+		List<UseMapEntry> ftfMapEntry = new ArrayList<UseMapEntry>();
 		
 		StringBuffer axisY = new StringBuffer();
 		int maxFinder = 0;
@@ -150,8 +160,6 @@ public class CreateHidesChartPlugin implements SpiderPlugin {
 		StringBuffer user_names = new StringBuffer();
 		int maxX = 0, maxY = 0, logpos = 0;
 		i=0;
-		List<Integer> xvals = new ArrayList<Integer>();
-		List<Integer> yvals = new ArrayList<Integer>();
 		for (Map<String,Map<String,String>> entry : ownerlist) {
 			if (entry.size() < minimumFinds) break;
 			Map<String,String> firstEntry = entry.values().iterator().next();
@@ -172,38 +180,57 @@ public class CreateHidesChartPlugin implements SpiderPlugin {
 				Map<String,String> log = entry.get(wpcode);
 				Map<String,String> ftflog = ftf_map.get(wpcode);
 				if (log == null) continue;
-				xvals.add(xpos);
-				yvals.add(ypos);
-//				size.append((log == ftflog) ? 100 : 80);
+				
 				maxX = Math.max(maxX, xpos);
 				maxY = Math.max(maxY, ypos);
 				ume = new UseMapEntry();
-
+				ume.x = xpos;
+				ume.y = ypos;
+				ume.ftf = (log == ftflog);
 				Date date = SpiderContext.fullDateFormat.parse(log.get("hides_founddate"));
 				ume.title = simpleDate.format(date);
 				ume.url = "http://coord.info/GL"+CreateHidesStatsPlugin.shorter(log.get("hides_logid"));
-				ume.name = "circle"+logpos;
-				imageMapEntry.put(ume.name, ume);
-				logpos++;
+				if (ume.ftf) {
+					ftfMapEntry.add(ume);
+				} else {
+					ume.name = "circle"+logpos;
+					imageMapEntry.put(ume.name, ume);
+					logpos++;
+				}
 			}
 			i++;
 		}
 
+		for (UseMapEntry ume : ftfMapEntry) {
+			ume.name = "circle"+logpos;
+			imageMapEntry.put(ume.name, ume);
+			logpos++;
+		}
+		
+		List<Integer> xvals = new ArrayList<Integer>();
+		List<Integer> yvals = new ArrayList<Integer>();
+		
+		for (UseMapEntry e : imageMapEntry.values()) {
+			if (e.x != -1 && e.y != -1) {
+				xvals.add(e.x);
+				yvals.add(e.y);
+			}
+		}
+
+		int firstFtfNode = xvals.size() - ftfMapEntry.size();
+		
 		// http://code.google.com/apis/chart/image/docs/gallery/scatter_charts.html#axis_labels
 		String chart = "https://chart.googleapis.com/chart?"
 			+"cht=s"
 			+"&chxt=t,y,t"
 			+"&chs=600x500"
-			+"&chf=bg,s,000000FF"
-			+"&chm=H,D6A4FB,0,-1,1,-1|V,D6A4FB,0,-1,1,-1"
-//			+"&chg="+nf.format(100d/maxX)+","+nf.format(100d/maxY)
+			+"&chf=c,lg,90,990000,0,FFFF00,0.5,009900,0.75|bg,s,000000FF"
+			+"&chm=H,D6A4FB,0,-1,1,-1|V,D6A4FB,0,-1,1,-1|d,FF0000,0,"+firstFtfNode+"::1,8"
+			+"&chem=y;s=cm_color;ds=0;dp=range,"+firstFtfNode+",,1;d=glyphish_trophy,0,FF0,FF0,FF0,16,000,ht;of=0,8"
 			+"&chxs=0,FFFFFF|1,FFFFFF|2,FFFFFF"
 			+"&chxr=0,0,"+maxX+"|1,0,"+maxY+"|2,0,"+maxX
-//			+"&chds=0,"+maxX+",0,"+maxY
 			+"&chxl=0:|"+cache_names1+"|1:"+user_names+"|2:|"+cache_names2+"|"
 			+"&chxp=0,"+axisX1+"|1,"+axisY+"|2,"+axisX2
-//			+"&chd=s:"+simpleEncode(xvals,maxX)
-//			+","+simpleEncode(yvals,maxY)
 			+"&chd=e:"+extendedEncode(xvals,maxX)
 			+","+extendedEncode(yvals,maxY)
 		;

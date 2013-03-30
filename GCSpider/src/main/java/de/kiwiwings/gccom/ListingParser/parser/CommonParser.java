@@ -34,25 +34,30 @@ public abstract class CommonParser {
 			pp = ParseParams.fromString(entry);
 			paramsCache.put(configEntry, pp);
 		}
-
-		CommonElement elem = selectElement(base, pp.select, pp.index);
 		assert(pp.attrib != null);
-		
-		String result;
-		if ("exist()".equals(pp.attrib)) {
-			result = (elem == null ? "false" : "true");
-		} else if (elem == null) {
-			result = "";
-		} else if ("tree()".equals(pp.attrib)) {
-			Element el = elem.getTree();
-			result = pp.postproc.process(el);
-		} else {
-			if ("text()".equals(pp.attrib)) {
-				result = elem.getText();
+
+		CommonElement elems[] = (pp.index == -1)
+			? selectElements(base, pp.select)
+			: new CommonElement[]{selectElement(base, pp.select, pp.index)};
+		 
+		String result = null;
+		for (CommonElement elem : elems) {
+			if ("exist()".equals(pp.attrib)) {
+				result = (elem == null ? "false" : "true");
+			} else if (elem == null) {
+				result = "";
+			} else if ("tree()".equals(pp.attrib)) {
+				Element el = elem.getTree();
+				result = pp.postproc.process(el);
 			} else {
-				result = elem.getAttribute(pp.attrib);
+				if ("text()".equals(pp.attrib)) {
+					result = elem.getText();
+				} else {
+					result = elem.getAttribute(pp.attrib);
+				}
+				result = pp.postproc.process(result);
 			}
-			result = pp.postproc.process(result);
+			if (result != null && !"".equals(result)) break;
 		}
 
 		return result;
