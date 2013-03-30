@@ -28,20 +28,14 @@ public class ParseCompare {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		File input = new File("src/test/debug/response - detail2.raw");
+		File input = new File("src/test/debug/response.raw");
 		Document doc = Jsoup.parse(input, "UTF-8", "");
 
 		JSoupParser jsp = new JSoupParser();
 		jsp.setDocument(doc);
 		
-		CommonElement ce = jsp.selectElement(null, "#ctl00_ContentBody_ShortDescription", 0);
-		
-		org.w3c.dom.Element el = ce.getTree();
-		
-		Html2BBCode bb = new Html2BBCode();
-		String str = bb.process(el);
-		
-		System.out.println(str);
+		CommonElement ce = jsp.selectElement(null, "script", 30);
+		System.out.println(ce.getText());
 	}
 	
 	public static void main2(String[] args) throws Exception {
