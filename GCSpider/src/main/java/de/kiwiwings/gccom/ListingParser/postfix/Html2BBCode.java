@@ -37,7 +37,12 @@ public class Html2BBCode implements ParseProc {
 		// if input is of type string, we assume xml wellformness
 		// i.e. the string comes from the log elements which are in xhtml format
 		if (input instanceof String) {
-			src = new StreamSource(new StringReader("<bbcode>"+input+"</bbcode>"));
+			String inp = (String)input;
+			// replace single "&" with "&amp;"
+			inp = inp.replaceAll("&(?!\\w{2,6};)", "&amp;");
+			// the same with single "<" ... not yet seen in the wild :)
+			inp = inp.replaceAll("<(?!/?\\w{1,10}>)", "&lt;");
+			src = new StreamSource(new StringReader("<bbcode>"+inp+"</bbcode>"));
 		} else if (input instanceof Element) {
 			src = new DOMSource((Element)input);
 		} else {
