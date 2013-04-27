@@ -41,7 +41,7 @@ public class Html2BBCode implements ParseProc {
 			// replace single "&" with "&amp;"
 			inp = inp.replaceAll("&(?!\\w{2,6};)", "&amp;");
 			// the same with single "<" ... not yet seen in the wild :)
-			inp = inp.replaceAll("<(?!/?\\w{1,10}>)", "&lt;");
+			inp = inp.replaceAll("<(\\s+)", "&lt;\\1");
 			src = new StreamSource(new StringReader("<bbcode>"+inp+"</bbcode>"));
 		} else if (input instanceof Element) {
 			src = new DOMSource((Element)input);

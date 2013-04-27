@@ -96,6 +96,9 @@ public class LoadDatabasePlugin implements SpiderPlugin {
 			Map<String,String> entry = new HashMap<String,String>();
 			
 			int maxCols = row.getLastCellNum();
+			// Workaround: Libre Office 4.0 sets last rownum wrong,
+			// so we need to break on the first empty row
+			if (maxCols == -1) break;
 			for (int celli=0; celli<maxCols; celli++) {
 				String name = schemaRev.get(celli);
 				Cell cell = row.getCell(celli);

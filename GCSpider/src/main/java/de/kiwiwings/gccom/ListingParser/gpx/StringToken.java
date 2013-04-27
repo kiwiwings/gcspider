@@ -10,6 +10,7 @@ public class StringToken extends TemplateToken {
 	}
 	public String print(SpiderContext ctx, Map<String,String> entry) {
 		String val = entry.get(tokenStr);
+		if (val == null) return "";
 		val = val.replaceAll("&", "&amp;");
 //		val = val.replaceAll("\"", "&quot;");
 		val = val.replaceAll("<", "&lt;");
